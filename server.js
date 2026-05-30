@@ -62,4 +62,47 @@ app.get('/', (req, res) => {
             </header>
             
             <h2 style="color: #2a5298;">📦 Mağazadaki Ürünler</h2>
-            <div class
+            <div class="grid" id="products-grid"></div>
+        </div>
+
+        <script>
+            fetch('/products')
+                .then(res => res.json())
+                .then(products => {
+                    const grid = document.getElementById('products-grid');
+                    grid.innerHTML = products.map(p => \`
+                        <div class="card">
+                            <h3>\${p.name}</h3>
+                            <div class="price">\${p.price} TL</div>
+                            <div class="stock">Stok Durumu: <strong>\${p.stock} Adet</strong></div>
+                            <a href="#" class="btn" onclick="alert('Bu proje bir bulut mimari demosudur, gerçek satış yapılmamaktadır.')">Sepete Ekle</a>
+                        </div>
+                    \`).join('');
+                });
+        </script>
+    </body>
+    </html>
+  `);
+});
+
+// 2. BACKEND API ENDPOINTLERİ
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'UP', database: isDatabaseConnected ? 'PostgreSQL' : 'In-Memory', timestamp: new Date() });
+});
+
+app.get('/products', async (req, res) => {
+  if (isDatabaseConnected && pool) {
+    try {
+      const result = await pool.query('SELECT * FROM products');
+      return res.json(result.rows);
+    } catch (err) {
+      return res.json(memoryProducts);
+    }
+  } else {
+    return res.json(memoryProducts);
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server ${PORT} portunda sorunsuz çalışıyor.`);
+});
