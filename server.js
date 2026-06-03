@@ -16,33 +16,17 @@ let memoryProducts = [
 
 let pool = null;
 
-// Veritabanını Başlatma ve Tablo Oluşturma Fonksiyonu
+// Veritabanı Kurulumu
 const initDB = async (dbPool) => {
   try {
-    // Tablo yoksa oluştur
-    await dbPool.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        price NUMERIC(10, 2) NOT NULL,
-        stock INT NOT NULL
-      );
-    `);
-    
-    // Tablo boş mu kontrol et
+    await dbPool.query('CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, price NUMERIC(10, 2) NOT NULL, stock INT NOT NULL);');
     const res = await dbPool.query('SELECT COUNT(*) FROM products');
     if (parseInt(res.rows[0].count) === 0) {
-      // Boşsa ürünleri yerleştir
-      await dbPool.query(`
-        INSERT INTO products (name, price, stock) VALUES 
-        ('Motosiklet Kaskı (Full Face)', 4500.00, 15),
-        ('Motosiklet Eldiveni (Deri)', 1200.00, 40),
-        ('Zincir Temizleme Spreyi', 250.00, 100);
-      `);
-      console.log('Veritabanına ilk ürünler başarıyla yüklendi.');
+      await dbPool.query("INSERT INTO products (name, price, stock) VALUES ('Motosiklet Kaskı (Full Face)', 4500.00, 15), ('Motosiklet Eldiveni (Deri)', 1200.00, 40), ('Zincir Temizleme Spreyi', 250.00, 100);");
+      console.log('Veritabanı ürünleri yüklendi.');
     }
   } catch (err) {
-    console.log('Tablo kurulumunda hata çıktı:', err.message);
+    console.log('DB Kurulum hatası: ' + err.message);
   }
 };
 
@@ -52,27 +36,122 @@ if (process.env.DATABASE_URL) {
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false }
     });
-    // Veritabanı bağlantısı kurulunca tabloları hazırla
     initDB(pool);
   } catch (err) {
-    console.log('DB hatası.');
+    console.log('DB bağlantı kurulamadı.');
   }
 }
 
-// Arayüzün Base64 Kodlanmış Hali
-const htmlBase64 = "PCFET0NUWVBFIGh0bWw+CjxsYW5nPSJ0ciI+CjxoZWFkPgogICAgPG1ldGEgY2hhcnNldD0iVVRGLTgiPgogICAgPHRpdGxlPkJ1bHV0IE1pbWFyaSBFLVRpY2FyZXQ8L3RpdGxlPgogICAgPHN0eWxlPgogICAgICAgIGJvZHkgeyBmb250LWZhbWlseTogc2Fucy1zZXJpZjsgYmFja2dyb3VuZDogI2Y0ZjZmOTsgcGFkZGluZzogMjBweDsgbWFyZ2luOiAwOyB9CiAgICAgICAgLmNvbnRhaW5lciB7IG1heC13aWR0aDogODAwcHg7IG1hcmdpbjogMCBhdXRvOyB9CiAgICAgICAgaGVhZGVyIHsgYmFja2dyb3VuZDogIzJhNTI5ODsgY29sb3I6IHdoaXRlOyBwYWRkaW5nOiAyMHB4OyBib3JkZXItcmFkaXVzOiAxMHB4OyB0ZXh0LWFsaWduOiBjZW50ZXI7IH0KICAgICAgICAuZ3JpZCB7IGRpc3BsYXk6IGdyaWQ7IGdyaWQtdGVtcGxhdGUtY29sdW1uczogcmVwZWF0KGF1dG8tZml0LCBtaW5tYXgoMjIwcHgsIDFmcikpOyBnYXA6IDIwcHg7IG1hcmdpbi10b3A6IDIwcHg7IH0KICAgICAgICAuY2FyZCB7IGJhY2tncm91bmQ6IHdoaXRlOyBwYWRkaW5nOiAyMHB4OyBib3JkZXItcmFkaXVzOiAxMHB4OyBib3gtc2hhZG93OiAwIDJweCA1cHggcmdiYSgwLDAsMCwwLjEpOyB0ZXh0LWFsaWduOiBjZW50ZXI7IH0KICAgICAgICAucHJpY2UgeyBmb250LXNpemU6IDIwcHg7IGNvbG9yOiAjMmVjYzcxOyBmb250LXdlaWdodDogYm9sZDsgbWFyZ2luOiAxMHB4IDA7IH0KICAgICAgICAuYnRuIHsgYmFja2dyb3VuZDogIzJhNTI5ODsgY29sb3I6IHdoaXRlOyBwYWRkaW5nOiAxMHB4OyBib3Rki6IG5vbmU7IGJvcmRlci1yYWRpdXM6IDVweDsgY3Vyc29yOiBwb2ludGVyOyB3aWR0aDogMTAwJTsgZm9udC13ZWlnaHQ6IGJvbGQ7IH0KICAgICAgICAuYnRuOmRpc2FibGVkIHsgYmFja2dyb3VuZDogI2NjYzsgY3Vyc29yOiBub3QtYWxsb3dlZDsgfQogICAgPC9zdHlsZT4KPC9oZWFkPgo8Ym9keT4KICAgIDxkaXYgY2xhc3M9ImNvbnRhaW5lciI+CiAgICAgICAg<header>\n            <h1>🚀 Bulut Mimari E-Ticaret Mağazası</h1>\n            <p>Stateless Alt Yapı & Gerçek Zamanlı Stok Yönetimi</p>\n        </header>\n        <div class="grid" id="products-grid"></div>\n    </div>\n    <script>\n        function loadProducts() {\n            fetch('/products')\n                .then(res => res.json())\n                .then(products => {\n                    const grid = document.getElementById('products-grid');\n                    grid.innerHTML = '';\n                    products.forEach(p => {\n                        const card = document.createElement('div');\n                        card.className = 'card';\n                        const isStockOut = p.stock <= 0;\n                        card.innerHTML = '<h3>'+p.name+'</h3><div class=\"price\">'+p.price+' TL</div><div style=\"margin-bottom:10px\">Stok: <strong>'+(isStockOut ? 'Tükendi' : p.stock + ' Adet')+'</strong></div><button class=\"btn\" '+(isStockOut?'disabled':'')+'>'+(isStockOut?'Stok Yok':'Satın Al (Stok Düş)')+'</button>';\n                        if (!isStockOut) {\n                            card.querySelector('button').onclick = () => buyProduct(p.id);\n                        }\n                        grid.appendChild(card);\n                    });\n                });\n        }\n        function buyProduct(id) {\n            fetch('/buy', {\n                method: 'POST',\n                headers: { 'Content-Type': 'application/json' },\n                body: JSON.stringify({ id: id })\n            })\n            .then(res => res.json())\n            .then(data => {\n                alert(data.message);\n                loadProducts();\n            });\n        }\n        loadProducts();\n    </script>\n</body>\n</html>";
-
+// Arayüz Rotalaması (Düz ve Hatasız HTML)
 app.get('/', (req, res) => {
-  // Base64 şablonunu ve düz HTML parçasını birleştirip gönderiyoruz
-  const htmlStart = Buffer.from("PCFET0NUWVBFIGh0bWw+CjxsYW5nPSJ0ciI+CjxoZWFkPgogICAgPG1ldGEgY2hhcnNldD0iVVRGLTgiPgogICAgPHRpdGxlPkJ1bHV0IE1pbWFyaSBFLVRpY2FyZXQ8L3RpdGxlPgogICAgPHN0eWxlPgogICAgICAgIGJvZHkgeyBmb250LWZhbWlseTogc2Fucy1zZXJpZjsgYmFja2dyb3VuZDogI2Y0ZjZmOTsgcGFkZGluZzogMjBweDsgbWFyZ2luOiAwOyB9CiAgICAgICAgLmNvbnRhaW5lciB7IG1heC13aWR0aDogODAwcHg7IG1hcmdpbjogMCBhdXRvOyB9CiAgICAgICAgaGVhZGVyIHsgYmFja2dyb3VuZDogIzJhNTI5ODsgY29sb3I6IHdoaXRlOyBwYWRkaW5nOiAyMHB4OyBib3JkZXItcmFkaXVzOiAxMHB4OyB0ZXh0LWFsaWduOiBjZW50ZXI7IH0KICAgICAgICAuZ3JpZCB7IGRpc3BsYXk6IGdyaWQ7IGdyaWQtdGVtcGxhdGUtY29sdW1uczogcmVwZWF0KGF1dG8tZml0LCBtaW5tYXgoMjIwcHgsIDFmcikpOyBnYXA6IDIwcHg7IG1hcmdpbi10b3A6IDIwcHg7IH0KICAgICAgICAuY2FyZCB7IGJhY2tncm91bmQ6IHdoaXRlOyBwYWRkaW5nOiAyMHB4OyBib3JkZXItcmFkaXVzOiAxMHB4OyBib3gtc2hhZG93OiAwIDJweCA1cHggcmdiYSgwLDAsMCwwLjEpOyB0ZXh0LWFsaWduOiBjZW50ZXI7IH0KICAgICAgICAucHJpY2UgeyBmb250LXNpemU6IDIwcHg7IGNvbG9yOiAjMmVjYzcxOyBmb250LXdlaWdodDogYm9sZDsgbWFyZ2luOiAxMHB4IDA7IH0KICAgICAgICAuYnRuIHsgYmFja2dyb3VuZDogIzJhNTI5ODsgY29sb3I6IHdoaXRlOyBwYWRkaW5nOiAxMHB4OyBib3JkZXI6IG5vbmU7IGJvcmRlci1yYWRpdXM6IDVweDsgY3Vyc29yOiBwb2ludGVyOyB3aWR0aDogMTAwJTsgZm9udC13ZWlnaHQ6IGJvbGQ7IH0KICAgICAgICAuYnRuOmRpc2FibGVkIHsgYmFja2dyb3VuZDogI2NjYzsgY3Vyc29yOiBub3QtYWxsb3dlZDsgfQogICAgPC9zdHlsZT4KPC9oZWFkPgo8Ym9keT4KICAgIDxkaXYgY2xhc3M9ImNvbnRhaW5lciI+", 'base64').toString('utf-8');
-  const htmlEnd = `
-        <header>
-            <h1>🚀 Bulut Mimari E-Ticaret Mağazası</h1>
-            <p>Stateless Alt Yapı & Gerçek Zamanlı Stok Yönetimi</p>
-        </header>
-        <div class="grid" id="products-grid"></div>
-    </div>
-    <script>
-        function loadProducts() {
-            fetch('/products')
-                .then(res => res
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Bulut Mimari E-Ticaret</title>
+        <style>
+            body { font-family: sans-serif; background: #f4f6f9; padding: 20px; margin: 0; }
+            .container { max-width: 800px; margin: 0 auto; }
+            header { background: #2a5298; color: white; padding: 20px; border-radius: 10px; text-align: center; }
+            .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 20px; }
+            .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
+            .price { font-size: 20px; color: #2ecc71; font-weight: bold; margin: 10px 0; }
+            .btn { background: #2a5298; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; }
+            .btn:disabled { background: #ccc; cursor: not-allowed; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>🚀 Bulut Mimari E-Ticaret Mağazası</h1>
+                <p>Stateless Alt Yapı & Gerçek Zamanlı Stok Yönetimi</p>
+            </header>
+            <div class="grid" id="products-grid"></div>
+        </div>
+        <script>
+            function loadProducts() {
+                fetch('/products')
+                    .then(function(res) { return res.json(); })
+                    .then(function(products) {
+                        var grid = document.getElementById('products-grid');
+                        grid.innerHTML = '';
+                        products.forEach(function(p) {
+                            var card = document.createElement('div');
+                            card.className = 'card';
+                            var isStockOut = p.stock <= 0;
+                            
+                            var statusText = isStockOut ? 'Tükendi' : p.stock + ' Adet';
+                            var btnText = isStockOut ? 'Stok Yok' : 'Satın Al (Stok Düş)';
+                            var disabledAttr = isStockOut ? 'disabled' : '';
+
+                            card.innerHTML = '<h3>' + p.name + '</h3>' +
+                                             '<div class="price">' + p.price + ' TL</div>' +
+                                             '<div style="margin-bottom:10px">Stok: <strong>' + statusText + '</strong></div>' +
+                                             '<button class="btn" ' + disabledAttr + '>' + btnText + '</button>';
+                            
+                            if (!isStockOut) {
+                                card.querySelector('button').onclick = function() { buyProduct(p.id); };
+                            }
+                            grid.appendChild(card);
+                        });
+                    });
+            }
+            function buyProduct(id) {
+                fetch('/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    alert(data.message);
+                    loadProducts();
+                });
+            }
+            loadProducts();
+        </script>
+    </body>
+    </html>
+  `);
+});
+
+// TÜM ÜRÜNLERİ LİSTELE
+app.get('/products', async (req, res) => {
+  if (pool) {
+    try {
+      const result = await pool.query('SELECT * FROM products ORDER BY id ASC');
+      return res.json(result.rows);
+    } catch (err) {
+      return res.json(memoryProducts);
+    }
+  }
+  return res.json(memoryProducts);
+});
+
+// STOK DÜŞÜRME
+app.post('/buy', async (req, res) => {
+  const productId = parseInt(req.body.id);
+  if (pool) {
+    try {
+      const check = await pool.query('SELECT stock, name FROM products WHERE id = $1', [productId]);
+      if (check.rows.length > 0 && check.rows[0].stock > 0) {
+        await pool.query('UPDATE products SET stock = stock - 1 WHERE id = $1', [productId]);
+        return res.json({ success: true, message: 'Başarılı! Stok güncellendi.' });
+      }
+    } catch (err) {
+      console.log('Hafızaya yönlendiriliyor.');
+    }
+  }
+
+  const product = memoryProducts.find(p => p.id === productId);
+  if (product && product.stock > 0) {
+    product.stock -= 1;
+    return res.json({ success: true, message: 'Başarılı! ' + product.name + ' stoku düşürüldü.' });
+  }
+  return res.status(400).json({ success: false, message: 'Stok yetersiz.' });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server ${PORT} portunda aktif.`);
+});
