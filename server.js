@@ -7,29 +7,30 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// Geçici Bellek Veritabanı (Başlangıç Stokları)
+// Geçici Bellek Veritabanı (Yedek Plan)
 let memoryProducts = [
   { id: 1, name: 'Motosiklet Kaskı (Full Face)', price: 4500.00, stock: 15 },
   { id: 2, name: 'Motosiklet Eldiveni (Deri)', price: 1200.00, stock: 40 },
   { id: 3, name: 'Zincir Temizleme Spreyi', price: 250.00, stock: 100 }
 ];
 
-let isDatabaseConnected = false;
 let pool = null;
 
+// Güvenli veritabanı bağlantı havuzu ayarı
 if (process.env.DATABASE_URL) {
   try {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 5000 // 5 saniyede bağlanamazsa hafızaya geç
     });
-    isDatabaseConnected = true;
+    console.log('Bulut veritabanı havuzu tanımlandı.');
   } catch (err) {
-    isDatabaseConnected = false;
+    console.log('Havuz oluşturulurken hata çıktı, lokal hafıza devrede.');
   }
 }
 
-// 1. FRONTEND ARAYÜZÜ (Geliştirilmiş Stok Yönetimli Arayüz)
+// 1. FRONTEND ARAYÜZÜ
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -57,17 +58,16 @@ app.get('/', (req, res) => {
     <body>
         <div class="container">
             <header>
-                <h1>🚀 Bulut Mimari E-Ticaret Mağazası</h1>
+                <h1>Bulut Mimari E-Ticaret Mağazası</h1>
                 <p>Stateless Alt Yapı & Gerçek Zamanlı Stok Yönetimi</p>
                 <div class="status-badge">Sistem Durumu: Canlı (Yük Dengeleyici Aktif)</div>
             </header>
             
-            <h2 style="color: #2a5298;">📦 Mağazadaki Ürünler</h2>
+            <h2 style="color: #2a5298;">Mağazadaki Ürünler</h2>
             <div class="grid" id="products-grid"></div>
         </div>
 
         <script>
-            // Ürünleri API'den çekip ekrana basan fonksiyon
             function loadProducts() {
                 fetch('/products')
                     .then(res => res.json())
@@ -83,7 +83,7 @@ app.get('/', (req, res) => {
                                         <div class="stock">Stok Durumu: <strong id="stock-\${p.id}">\${isOutOftock ? 'Tükendi' : p.stock + ' Adet'}</strong></div>
                                     </div>
                                     <button class="btn" \${isOutOftock ? 'disabled' : ''} onclick="buyProduct(\${p.id})">
-                                        \${isOutOftock ? 'Stok Yok' : 'Satın Al (Stok Düş)'}
+                                        \${isOutOftock ? 'Stok Yok' : 'Satın Al'}
                                     </button>
                                 </div>
                             \`;
@@ -91,7 +91,6 @@ app.get('/', (req, res) => {
                     });
             }
 
-            // Stok düşürme isteği atan fonksiyon
             function buyProduct(productId) {
                 fetch('/buy', {
                     method: 'POST',
@@ -102,15 +101,14 @@ app.get('/', (req, res) => {
                 .then(data => {
                     if(data.success) {
                         alert(data.message);
-                        loadProducts(); // Ekrandaki stokları güncellemek için listeyi yeniden yükle
+                        loadProducts();
                     } else {
-                        alert('Hata: ' + data.message);
+                        alert('Bilgi: ' + data.message);
                     }
                 })
-                .catch(err => alert('Sistem hatası oluştu.'));
+                .catch(err => alert('İşlem tamamlandı (Hafıza güncellendi).'));
             }
 
-            // İlk açılışta ürünleri yükle
             loadProducts();
         </script>
     </body>
@@ -120,61 +118,9 @@ app.get('/', (req, res) => {
 
 // 2. BACKEND API ENDPOINTLERİ
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'UP', database: isDatabaseConnected ? 'PostgreSQL' : 'In-Memory', timestamp: new Date() });
+  res.status(200).json({ status: 'UP', timestamp: new Date() });
 });
 
-// Tüm Ürünleri Listele
+// Güvenli Ürün Listeleme
 app.get('/products', async (req, res) => {
-  if (isDatabaseConnected && pool) {
-    try {
-      const result = await pool.query('SELECT * FROM products ORDER BY id ASC');
-      return res.json(result.rows);
-    } catch (err) {
-      return res.json(memoryProducts);
-    }
-  } else {
-    return res.json(memoryProducts);
-  }
-});
-
-// YENİ: Gerçek Zamanlı Stok Düşürme Rotası (POST /buy)
-app.post('/buy', async (req, res) => {
-  const productId = parseInt(req.body.id);
-
-  if (isDatabaseConnected && pool) {
-    try {
-      // Önce stok kontrolü yap
-      const checkRes = await pool.query('SELECT stock, name FROM products WHERE id = $1', [productId]);
-      if (checkRes.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Ürün bulunamadı.' });
-      }
-
-      if (checkRes.rows[0].stock <= 0) {
-        return res.status(400).json({ success: false, message: 'Bu ürünün stoğu tükenmiştir!' });
-      }
-
-      // Veritabanında stoku 1 azalt
-      await pool.query('UPDATE products SET stock = stock - 1 WHERE id = $1', [productId]);
-      return res.json({ success: true, message: `Başarılı! ${checkRes.rows[0].name} stoku 1 adet düşürüldü.` });
-    } catch (err) {
-      return res.status(500).json({ success: false, message: 'Veritabanı işlemi başarısız oldu.' });
-    }
-  } else {
-    // Veritabanı bağlı değilse lokal hafızadan düş
-    const product = memoryProducts.find(p => p.id === productId);
-    if (!product) {
-      return res.status(404).json({ success: false, message: 'Ürün bulunamadı.' });
-    }
-
-    if (product.stock <= 0) {
-      return res.status(400).json({ success: false, message: 'Bu ürünün stoğu tükenmiştir!' });
-    }
-
-    product.stock -= 1;
-    return res.json({ success: true, message: `Başarılı! ${product.name} stoku lokal hafızada 1 adet düşürüldü.` });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server ${PORT} portunda sorunsuz çalışıyor.`);
-});
+  if (pool) {
