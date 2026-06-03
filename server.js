@@ -58,12 +58,12 @@ app.get('/', (req, res) => {
     <body>
         <div class="container">
             <header>
-                <h1>Bulut Mimari E-Ticaret Mağazası</h1>
+                <h1> Bulut Mimari E-Ticaret Mağazası</h1>
                 <p>Stateless Alt Yapı & Gerçek Zamanlı Stok Yönetimi</p>
                 <div class="status-badge">Sistem Durumu: Canlı (Yük Dengeleyici Aktif)</div>
             </header>
             
-            <h2 style="color: #2a5298;">Mağazadaki Ürünler</h2>
+            <h2 style="color: #2a5298;"> Mağazadaki Ürünler</h2>
             <div class="grid" id="products-grid"></div>
         </div>
 
