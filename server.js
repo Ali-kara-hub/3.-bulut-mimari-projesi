@@ -9,8 +9,8 @@ const PORT = process.env.PORT || 3000;
 
 // Yedek Bellek Veritabanı
 let memoryProducts = [
-  { id: 1, name: 'Motosiklet Kaskı (Full Face)', price: 4500.00, stock: 15 },
-  { id: 2, name: 'Motosiklet Eldiveni (Deri)', price: 1200.00, stock: 40 },
+  { id: 1, name: 'Motosiklet Kaskı', price: 4500.00, stock: 15 },
+  { id: 2, name: 'Motosiklet Eldiveni', price: 1200.00, stock: 40 },
   { id: 3, name: 'Zincir Temizleme Spreyi', price: 250.00, stock: 100 }
 ];
 
@@ -64,7 +64,7 @@ app.get('/', (req, res) => {
     <body>
         <div class="container">
             <header>
-                <h1>🚀 Bulut Mimari E-Ticaret Mağazası</h1>
+                <h1>Bulut Mimari E-Ticaret Mağazası</h1>
                 <p>Stateless Alt Yapı & Gerçek Zamanlı Stok Yönetimi</p>
             </header>
             <div class="grid" id="products-grid"></div>
